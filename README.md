@@ -3,6 +3,13 @@
 
 <center><img src="image/m5cardkb.jpg" width="75%"></center>
 
+#### 主な更新内容
+##### v1.1.0b1 (2020/4/30)
+- Seriialからの入力にも対応（IJUtilitiesで文字入力やプログラムの転送が無線でできます）
+
+##### v1.0.0b1 (2020/4/29)
+- 公開
+
 ## BINをインストールする方法
 - [M5Burner\_Mic](http://micutil.com/download/M5Burner_Mic.zip)をダウンロード・インストールする。
 - M5CardKB\_for\_MJの中にあるbinフォルダの中の**M5CardKB\_for\_MJフォルダ**をM5Burner\_Micの**firmwaresフォルダ**の中にコピーします。

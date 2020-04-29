@@ -2,19 +2,20 @@
  * M5CardKB_for_MJ
  * CC by Micono
  * 
- * 2020/4/28 ver1.0.0
+ * 2020/4/30 ver1.1.0b1 シリアルからの入力の出力に対応
+ * 2020/4/28 ver1.0.0b1 公開
  * 
  * Aボタン/リターンキー：接続
  * Bボタン/Up-Downキー：SSID切り替え
  * 電源ボタン（１秒以下押し）：SSID再スキャン
  * 
- * ESC：パスワード消去
- * Backspace：パスワード１文字削除
+ * ESC：パスワード/リモートIP/ポート消去
+ * Backspace：パスワード/リモートIP/ポート１文字削除
  * 
 *******************************************/
 
 //#define ARDUINO_M5Stack_Core_ESP32 //ESP32 chimera board define
-#define ARDUINO_M5StickC_ESP32
+//#define ARDUINO_M5StickC_ESP32
 
 #if defined(ARDUINO_M5Stack_Core_ESP32)
   #include <M5Stack.h>
@@ -201,24 +202,6 @@ void changeSSID(int n) {
 }
 
 /***************************
- * UDPデータ送信
- * 
-****************************/
-void sendUDP(char c){
-  //M5.Lcd.setCursor(150,0);
-  //M5.Lcd.print(String(c));
-  //M5.Lcd.printf("%c", c);
-  wifiUdp.beginPacket(sValue[1].c_str(),sValue[2].toInt());//kRemoteIpadr, kRmoteUdpPort);
-  wifiUdp.print(c);//printf("%c", c);
-  wifiUdp.endPacket();  
-}
-
-void sendUDPs(String s){
-  wifiUdp.beginPacket(sValue[1].c_str(),sValue[2].toInt());//kRemoteIpadr, kRmoteUdpPort);
-  wifiUdp.print(s);//printf("%c", c);
-  wifiUdp.endPacket();  
-}
-/***************************
  * セットアップ
  * 
 ****************************/
@@ -250,11 +233,91 @@ void setup()
   if(WiFi_Connect()==false) MJ_APL();
 }
 
+/***************************
+ * UDPデータ送信
+ * 
+****************************/
+void sendUDP(uint8_t c){
+  //M5.Lcd.setCursor(150,0);
+  //M5.Lcd.print(String(c));
+  //M5.Lcd.printf("%c", c);
+  wifiUdp.beginPacket(sValue[1].c_str(),sValue[2].toInt());//kRemoteIpadr, kRmoteUdpPort);
+  wifiUdp.print((char)c);//printf("%c", c);
+  wifiUdp.endPacket();
+}
+
+void sendUDPs(String s){
+  wifiUdp.beginPacket(sValue[1].c_str(),sValue[2].toInt());//kRemoteIpadr, kRmoteUdpPort);
+  wifiUdp.print(s);//printf("%c", c);
+  wifiUdp.endPacket();  
+}
+
+/***************************
+ * データを送信
+ * 
+****************************/
+void dataSend(uint8_t c) {
+  if(isConnecting) {
+    sendUDP(c);//接続先に送信
+  } else {
+    switch(c) {
+      case 10://決定
+        doUDPconnect();
+        break;
+      case 29://Left
+        changeSSID(1);
+        break;
+      case 28://Right
+        changeSSID(-1);
+        break;
+      case 30://Up
+        MJ_DrawDATA(-1);
+        break;
+      case 31://Down
+        MJ_DrawDATA(1);
+        break;
+      default:
+        if(c>0x20&&c<0x7F) {
+          sValue[sNum]=sValue[sNum]+String((char)c);
+        } else if(c==0x1B) {//Esc
+          sValue[sNum]="";
+        } else if(c==8) {//Backspace
+          int pn=sValue[sNum].length();
+          if(pn==1) {
+            sValue[sNum]="";
+          } else if(pn>1) {
+            sValue[sNum]=sValue[sNum].substring(0,pn-1);
+          }
+        }
+        MJ_DrawDATA(0);
+        break;
+    }
+  }
+}
+
+/***************************
+ * UARTからのデータ処理
+ * 
+****************************/
+void getUartData() {
+  while (Serial.available()) {
+    uint8_t c = (uint8_t)Serial.read();
+    if(c!=0) {
+      dataSend(c);
+      delay(5);
+    }
+  }
+}
+
+/***************************
+ * ユニットからのデータを送信
+ * 
+****************************/
 void getKeyData(int kb_add) {
   Wire.requestFrom(kb_add, 1);
   while(Wire.available())
   {
-    char c = Wire.read(); // receive a byte as characterif
+    uint8_t c = Wire.read(); // receive a byte as characterif
     if (c != 0)
     {
       switch(c) {
@@ -264,7 +327,9 @@ void getKeyData(int kb_add) {
         case 0xB5: c=30; break;//up
         case 0xB6: c=31; break;//down
       }
-      Serial.println(c,HEX);
+      //Serial.println(c,HEX);
+      dataSend(c);
+      /*
       if(isConnecting) {
         sendUDP(c);//接続先に送信
       } else {
@@ -300,7 +365,7 @@ void getKeyData(int kb_add) {
             MJ_DrawDATA(0);
             break;
         }
-      }
+      }*/
     }
   }
 }
@@ -324,6 +389,9 @@ void loop()
     if(M5.Axp.GetBtnPress()==2) MJ_APL();//Axp: SSIDスキャン
   #endif
 
+  //Uartデータ
+  getUartData();
+  
   //キーボードユニット
   #ifdef CARDKB_ADDR
   getKeyData(CARDKB_ADDR);
