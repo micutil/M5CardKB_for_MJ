@@ -4,6 +4,9 @@
 <center><img src="image/m5cardkb.jpg" width="75%"></center>
 
 #### 主な更新内容
+##### v1.2.0b1 (2020/2/24)
+- 無線を使わずに有線でM5StackまたはM5StickCを介してCardKBからIchigoJamに文字入力できるように対応（CardKBからの信号をPS/2信号に変換, またはUARTで送信します）
+
 ##### v1.1.0b1 (2020/4/30)
 - Serialからの入力にも対応（IJUtilitiesで文字入力やプログラムの転送が無線でできます）
 
@@ -55,7 +58,7 @@ MicJackでは、IchigoJamに文字信号を送る場合に、TXを使って送�
 		- ESP32の**IO21**とIchigoJamの**KBD1**を接続
 		- ESP32の**IO22**とIchigoJamの**KBD2**を接続
 
-	<IMG SRC="image/kbd.jpg "width="200">
+	<IMG SRC="image/kbd.jpg" width="200">
 
 
 ## 操作方法
@@ -68,6 +71,38 @@ MicJackでは、IchigoJamに文字信号を送る場合に、TXを使って送�
 
 <IMG SRC="image/ope.png" width="57%"> <IMG SRC="image/CardKB.png" width="40%">
 	
+
+## 無線を使わずに、IchigoJamに繋げて、入力する方法
+
+#### KBD1・KBD2（＝USB端子）に繋げる場合
+- Bボタンを何回か押して、表示を「PS/2 Keyboard」に切り替える（写真）<br/>注）IchigoJamの電源をOFF/ONする必要がある場合があります。5Vは必要に応じて接続して下さい。
+
+<IMG SRC="image/ps2.JPG" width="240">
+
+接続するポート番号
+
+| IchigoJam | M5StickC | | M5Stack |
+|---|---|---|---|
+| KBD1 | io 0 | | io 21 |
+| KBD2 | io 26 | | io 22 |
+| GND | GND | | GND |
+| 5V | 5V | | 5V |
+
+#### TX (/RX) に繋げる場合
+- Bボタンを何回か押して、表示を「UART input」に切り替える（写真）<br>注）RXは接続の必要はありません。5Vは必要に応じて接続して下さい。
+
+<IMG SRC="image/uart.JPG" width="240">
+
+
+接続するポート番号
+
+| IchigoJam | M5StickC | | M5Stack |
+|---|---|---|---|
+| RX | io 36 | | io 16 |
+| TX | io 26 | | io 17 |
+| GND | GND | | GND |
+| 5V | 5V | | 5V |
+
 
 ## ライセンス
 CC BY Micono

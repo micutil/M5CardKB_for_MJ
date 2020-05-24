@@ -2,6 +2,7 @@
  * M5CardKB_for_MJ
  * CC by Micono
  * 
+ * 2020/5/24 ver1.2.0b1 PS/2, UART 入力対応
  * 2020/4/30 ver1.1.0b1 シリアルからの入力の出力に対応
  * 2020/4/28 ver1.0.0b1 公開
  * 
@@ -14,7 +15,7 @@
  * 
 *******************************************/
 
-//#define ARDUINO_M5Stack_Core_ESP32 //ESP32 chimera board define
+#define ARDUINO_M5Stack_Core_ESP32 //ESP32 chimera board define
 //#define ARDUINO_M5StickC_ESP32
 
 #if defined(ARDUINO_M5Stack_Core_ESP32)
@@ -22,11 +23,31 @@
   #define XMAX 320
   #define YMAX 240
   #define DTXSIZE 2
+  #define uartInput
+  #define u2rx  16
+  #define u2tx  17
+  #define useKbd
 #elif defined(ARDUINO_M5StickC_ESP32)
   #include <M5StickC.h>
   #define XMAX 180
   #define YMAX 80
   #define DTXSIZE 1
+  //#define uartInput //Use UART or PS/2
+  #ifdef uartInput
+    #define u2rx  36
+    #define u2tx  26
+  #else
+    #define useKbd
+  #endif
+#endif
+
+#ifdef uartInput
+  int u2num=0;
+  boolean u2tgt=false;
+#endif
+#ifdef useKbd
+  int ps2num=0;
+  boolean ps2tgt=false;
 #endif
 
 #include <WiFi.h>
@@ -65,10 +86,181 @@ static const int kLocalPort = 20000;  //自身のポート
 boolean isConnecting = false;
 
 //SSID scan data
-#define listmax 20
+#define listmax 24
 String ssid[listmax];
 int listcount=0;
 int listtarget=0;
+
+/***********************************************/
+/***************** Keybord Input ***************/
+/***********************************************/
+
+
+#ifdef useKbd
+bool kbdMode=true;
+
+#define detectHostKbd //ホストからの送信データ //
+bool useHostKbdCmd=false;
+
+#include <ps2dev.h>
+
+#if defined(ARDUINO_ESP32_MODULE) || defined(ARDUINO_M5Stack_Core_ESP32)
+  #define KB_CLK      21 // A4  // PS/2 CLK  IchigoJamのKBD1に接続 //21//
+  #define KB_DATA     22 // A5  // PS/2 DATA IchigoJamのKBD2に接続 //22//
+#elif defined(ARDUINO_M5StickC_ESP32)
+  //Grove端子 SDA:IO32, SCL:IO33
+  //Wire.begin(32, 33);
+  #define KB_CLK      0  // A4  // PS/2 CLK  IchigoJamのKBD1に接続 //21//
+  #define KB_DATA     26 // A5  // PS/2 DATA IchigoJamのKBD2に接続 //22//
+#elif defined(ARDUINO_ESP8266_MODULE)
+  #define KB_CLK      13 // A4  // PS/2 CLK  IchigoJamのKBD1に接続 //21//
+  #define KB_DATA     16 // A5  // PS/2 DATA IchigoJamのKBD2に接続 //22//
+#endif //ARDUINO_ARCH_ESP32
+
+uint8_t enabled =0;               // PS/2 ホスト送信可能状態
+PS2dev keyboard(KB_CLK, KB_DATA); // PS/2デバイス
+
+//const uint8_t ijKeyMap[2][272] PROGMEM = {
+uint8_t ijKeyMap[2][272] = {
+  {
+    0,0,0,0,0,0,0,0,1,1,1,0,0,1,0,1, 0,3,3,3,3,0,0,3,0,0,0,1,3,3,3,3,  //0x00 - 0x1F
+    1,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,  //0x20 - 0x3F
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,  //0x40 - 0x5F
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,  //0x60 - 0x7F
+    5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,  //0x80 - 0x9F
+    6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6, 0,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,  //0xA0 - 0xBF (カナ)
+    6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6, 6,6,6,6,6,6,6,6,6,6,6,6,6,6,0,0,  //0xC0 - 0xDF (カナ)
+    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,  //0xE0 - 0xFF PGC
+    0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0 //for Function Key
+  },
+  {
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x66,0x0D,0x5A,0x00,0x00,0x5A,0x00,0x13,
+    0x00,0x70,0x6C,0x7D,0x7A,0x00,0x00,0x69,0x00,0x00,0x00,0x76,0x6B,0x74,0x75,0x72,
+    0x29,0x16,0x1E,0x26,0x25,0x2E,0x36,0x3D,0x3E,0x46,0x52,0x4C,0x41,0x4E,0x49,0x4A,  //0x20
+    0x45,0x16,0x1E,0x26,0x25,0x2E,0x36,0x3D,0x3E,0x46,0x52,0x4C,0x41,0x4E,0x49,0x4A,
+    0x54,0x1C,0x32,0x21,0x23,0x24,0x2B,0x34,0x33,0x43,0x3B,0x42,0x4B,0x3A,0x31,0x44,  //0x40
+    0x4D,0x15,0x2D,0x1B,0x2C,0x3C,0x2A,0x1D,0x22,0x35,0x1A,0x5B,0x6A,0x5D,0x55,0x51,
+    0x54,0x1C,0x32,0x21,0x23,0x24,0x2B,0x34,0x33,0x43,0x3B,0x42,0x4B,0x3A,0x31,0x44,  //0x60
+    0x4D,0x15,0x2D,0x1B,0x2C,0x3C,0x2A,0x1D,0x22,0x35,0x1A,0x5B,0x6A,0x5D,0x55,0x00,  
+    0x45,0x16,0x1E,0x26,0x25,0x2E,0x36,0x3D,0x3E,0x46,0x1C,0x32,0x21,0x23,0x24,0x2B,  //0x80
+    0x34,0x33,0x43,0x3B,0x42,0x4B,0x3A,0x31,0x44,0x4D,0x15,0x2D,0x1B,0x2C,0x3C,0x2A,
+    0x6A,0x49,0x5B,0x5D,0x41,0x4A,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,  //0xA0
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,  //0xC0
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x45,0x16,0x1E,0x26,0x25,0x2E,0x36,0x3D,0x3E,0x46,0x1C,0x32,0x21,0x23,0x24,0x2B,  //0xE0
+    0x34,0x33,0x43,0x3B,0x42,0x4B,0x3A,0x31,0x44,0x4D,0x15,0x2D,0x1B,0x2C,0x3C,0x2A,
+    0x00,0x05,0x06,0x04,0x0C,0x03,0x0B,0x83,0x0A,0x01,0x09,0x78,0x07,0x00,0x00,0x00,
+  }
+};
+
+#ifdef detectHostKbd
+// PS/2 ホストにack送信
+void ack() {
+  while(keyboard.write(0xFA));
+}
+
+// PS/2 ホストから送信されるコマンドの処理
+int keyboardcommand(int command) {
+  //mjSer.println(command);
+  unsigned char val;
+  uint32_t tm;
+  switch (command) {
+  case 0xFF:
+    ack();// Reset: キーボードリセットコマンド。正しく受け取った場合ACKを返す。
+    //keyboard.write(0xAA);
+    break;
+  case 0xFE: // 再送要求
+    ack();
+    break;
+  case 0xF6: // 起動時の状態へ戻す
+    //enter stream mode
+    ack();
+    break;
+  case 0xF5: //起動時の状態へ戻し、キースキャンを停止する
+    //FM
+    enabled = 0;
+    ack();
+    break;
+  case 0xF4: //キースキャンを開始する
+    //FM
+    enabled = 1;
+    ack();
+    break;
+  case 0xF3: //set typematic rate/delay : 
+    ack();
+    keyboard.read(&val); //do nothing with the rate
+    ack();
+    break;
+  case 0xF2: //get device id : 
+    ack();
+    keyboard.write(0xAB);
+    keyboard.write(0x83);
+    break;
+  case 0xF0: //set scan code set
+    ack();
+    keyboard.read(&val); //do nothing with the rate
+    ack();
+    break;
+  case 0xEE: //echo :キーボードが接続されている場合、キーボードはパソコンへ応答（ECHO Responce）を返す。
+    //ack();
+    keyboard.write(0xEE);
+    break;
+  case 0xED: //set/reset LEDs :キーボードのLEDの点灯/消灯要求。これに続くオプションバイトでLEDを指定する。 
+    ack();
+    keyboard.read(&val); //do nothing with the rate
+    ack();
+    break;
+  }
+}
+#endif //detectHostKbd
+
+void breakKeyCode(uint8_t c) {
+  keyboard.write(0xF0);
+  keyboard.write(c);
+}
+
+#endif //useKbd
+
+bool sendKeyCode(int key) {
+    
+#ifdef useKbd
+
+  if(kbdMode) {
+    //if(key>0xFF) key=key-0x100;
+    
+    if(key>255+16) return false;
+    
+    uint8_t t=ijKeyMap[0][key];//mjSer.println(t);
+    uint8_t c=ijKeyMap[1][key];//mjSer.println(c);
+    
+    if(t==0||t==6) {
+      Serial.write(key);
+      return false;
+    }
+
+    if(t==4||t==5) keyboard.write(0x11);
+    if(t==2||t==5) keyboard.write(0x12);
+    if(t==3) keyboard.write(0xE0);
+    keyboard.write(c);
+    delay(1);
+    
+    if(t==3) keyboard.write(0xE0);
+    breakKeyCode(c);
+    if(t==2||t==5) breakKeyCode(0x12);
+    if(t==4||t==5) breakKeyCode(0x11);
+  
+    return true;
+  }
+  
+#endif //useKbd
+
+  Serial.write(key);
+  return false;
+}
+
+/***********************************************/
+/***********************************************/
 
 /***************************
  * 選択されているSSIDに接続
@@ -95,6 +287,12 @@ bool WiFi_Connect()
  * 
 ****************************/
 void MJ_DrawSSID(uint16_t c) {
+  #ifdef useKbd
+    if(ps2tgt) c=TFT_RED;
+  #endif
+  #ifdef uartInput
+    if(u2tgt) c=TFT_MAGENTA;
+  #endif
   M5.Lcd.setTextSize(2);
   M5.Lcd.setCursor(0,18);
   M5.Lcd.fillRect(0,18,XMAX,32,TFT_BLACK);
@@ -147,16 +345,52 @@ void MJ_APL() {
   // WiFi.scanNetworks will return the number of networks found
   listcount = WiFi.scanNetworks();
   
+  String ssic[listcount];
+  int j=0,k=0;
   if (listcount == 0) {
-    M5.Lcd.println("'Not found");
+    //M5.Lcd.println("'Not found");
+    #ifdef useKbd
+      ps2tgt=true;
+    #endif
+    #ifdef uartInput
+      #ifdef useKbd
+        u2tgt=true;
+      #endif
+    #endif
+    
   } else {
-    for (int i = 0; i < listcount; ++i) {
+    for (int i=0; i < listcount; ++i) {
       // Print SSID and RSSI for each network found
       //s=s+WiFi.SSID(i);//+" ("+WiFi.RSSI(i)+")";
-      if(i<listmax) ssid[i]=WiFi.SSID(i);
+      if(i<listmax-1) {
+        String wj=WiFi.SSID(i);
+        if(wj.startsWith("MJ-")) {
+          ssid[j++]=wj;
+        } else {
+          ssic[k++]=wj;
+        }
+      }
+      
     }
-    MJ_DrawSSID(TFT_WHITE);
   }
+  
+  //Serial.println(ssic[k-1]);
+  //ssid[listcount]=ps2kbd;ps2num=listcount;listcount+=1;
+  
+  #ifdef useKbd
+    ssid[j]="PS/2 Keyboard\nKBD1="+String(KB_CLK)+": 2="+String(KB_DATA);
+    ps2num=j;j+=1;listcount=j+k;
+  #endif
+  #ifdef uartInput
+    ssid[j]="UART Input\nRX="+String(u2rx)+": TX="+String(u2tx);
+    u2num=j;j+=1;listcount=j+k;
+  #endif
+  
+  for(int i=0; i<k; i++) {
+    ssid[j++]=ssic[i];
+  }
+  
+  MJ_DrawSSID(TFT_WHITE);
   MJ_DrawDATA(0); 
 }
 
@@ -165,6 +399,12 @@ void MJ_APL() {
  * 
 ****************************/
 void doUDPconnect() {
+  #ifdef useKbd
+    if(ps2tgt) return;
+  #endif
+  #ifdef uartInput
+    if(u2tgt) return;
+  #endif
   if(WiFi.status() != WL_CONNECTED) {
     if(WiFi_Connect()) {
       isConnecting=true;
@@ -195,6 +435,14 @@ void changeSSID(int n) {
     } else {
       if(listtarget<0) listtarget=listcount-1;
     }
+    
+    #ifdef useKbd
+      ps2tgt=(listtarget==ps2num);
+    #endif
+    #ifdef uartInput
+      u2tgt=(listtarget==u2num);
+    #endif
+
     MJ_DrawSSID(TFT_WHITE);
   } else {
     MJ_APL();
@@ -206,9 +454,21 @@ void changeSSID(int n) {
  * 
 ****************************/
 void setup()
-{
+{ 
+  //Keyboard
+  #ifdef useKbd
+  //keyboard.keyboard_init();
+  #endif
+  
   M5.begin();
   Serial.begin(115200);
+  while (!Serial) { ; }
+  
+  #ifdef uartInput
+  Serial2.begin(115200, SERIAL_8N1, u2rx, u2tx); // EXT_IO
+  while (!Serial2) { ; }
+  #endif
+  
   Wire.begin();
 
   #if defined(CARDKB_ADDR) || defined(JOY_ADDR)
@@ -231,6 +491,12 @@ void setup()
 
   //SSIDスキャン
   if(WiFi_Connect()==false) MJ_APL();
+
+  #ifdef useKbd
+  //Keyboard
+  keyboard.keyboard_init();
+  #endif
+
 }
 
 /***************************
@@ -259,6 +525,17 @@ void sendUDPs(String s){
 void dataSend(uint8_t c) {
   if(isConnecting) {
     sendUDP(c);//接続先に送信
+    
+  #ifdef useKbd
+  } else if(ps2tgt) {
+    sendKeyCode(c);
+    Serial.print((char)c);
+  #endif
+  #ifdef uartInput
+  } else if(u2tgt) {
+    Serial.print((char)c);
+    Serial2.print((char)c);
+  #endif
   } else {
     switch(c) {
       case 10://決定
@@ -329,43 +606,6 @@ void getKeyData(int kb_add) {
       }
       //Serial.println(c,HEX);
       dataSend(c);
-      /*
-      if(isConnecting) {
-        sendUDP(c);//接続先に送信
-      } else {
-        switch(c) {
-          case 10://決定
-            doUDPconnect();
-            break;
-          case 29://Left
-            changeSSID(1);
-            break;
-          case 28://Right
-            changeSSID(-1);
-            break;
-          case 30://Up
-            MJ_DrawDATA(-1);
-            break;
-          case 31://Down
-            MJ_DrawDATA(1);
-            break;
-          default:
-            if(c>0x20&&c<0x7F) {
-              sValue[sNum]=sValue[sNum]+String(c);
-            } else if(c==0x1B) {//Esc
-              sValue[sNum]="";
-            } else if(c==8) {//Backspace
-              int pn=sValue[sNum].length();
-              if(pn==1) {
-                sValue[sNum]="";
-              } else if(pn>1) {
-                sValue[sNum]=sValue[sNum].substring(0,pn-1);
-              }
-            }
-            MJ_DrawDATA(0);
-            break;
-        }
-      }*/
     }
   }
 }
@@ -388,6 +628,17 @@ void loop()
   #elif defined(ARDUINO_M5StickC_ESP32)
     if(M5.Axp.GetBtnPress()==2) MJ_APL();//Axp: SSIDスキャン
   #endif
+
+  #ifdef useKbd //#ifdef detectHostKbd
+    if(kbdMode) { //if(useHostKbdCmd) {
+      unsigned char ck;  // ホストからの送信データ
+      if( (digitalRead(KB_CLK)==LOW) || (digitalRead(KB_DATA) == LOW)) {
+        while(keyboard.read(&ck)) ;
+        keyboardcommand(ck);
+        //Serial.println(ck,HEX);
+      }
+    }
+  #endif  
 
   //Uartデータ
   getUartData();
