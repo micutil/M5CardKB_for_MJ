@@ -3,8 +3,14 @@
 
 <center><img src="image/m5cardkb.jpg" width="75%"></center>
 
+
+
 #### 主な更新内容
-##### v1.2.0b1 (2020/2/24)
+##### v1.3.0b1 (2020/6/19)
+- HAT CardKBに対応<br>
+<img src="image/hatcardkb.jpg" width="40%">
+
+##### v1.2.0b1 (2020/5/24)
 - 無線を使わずに有線でM5StackまたはM5StickCを介してCardKBからIchigoJamに文字入力できるように対応（CardKBからの信号をPS/2信号に変換, またはUARTで送信します）
 
 ##### v1.1.0b1 (2020/4/30)
@@ -81,12 +87,12 @@ MicJackでは、IchigoJamに文字信号を送る場合に、TXを使って送�
 
 接続するポート番号
 
-| IchigoJam | M5StickC | | M5Stack |
-|---|---|---|---|
-| KBD1 | io 0 | | io 21 |
-| KBD2 | io 26 | | io 22 |
-| GND | GND | | GND |
-| 5V | 5V | | 5V |
+| IchigoJam | M5StickC | M5Stack |
+|---|---|---|
+| KBD1 | io 0 | io 21 |
+| KBD2 | io 26 | io 22 |
+| GND | GND | GND |
+| 5V | 5V | 5V |
 
 #### TX (/RX) に繋げる場合
 - Bボタンを何回か押して、表示を「UART input」に切り替える（写真）<br>注）RXは接続の必要はありません。5Vは必要に応じて接続して下さい。
@@ -94,14 +100,23 @@ MicJackでは、IchigoJamに文字信号を送る場合に、TXを使って送�
 <IMG SRC="image/uart.JPG" width="240">
 
 
-接続するポート番号
+接続するポート番号（普通のCardKBの場合）
 
-| IchigoJam | M5StickC | | M5Stack |
-|---|---|---|---|
-| RX | io 36 | | io 16 |
-| TX | io 26 | | io 17 |
-| GND | GND | | GND |
-| 5V | 5V | | 5V |
+| IchigoJam | M5StickC | M5Stack | 
+|---|---|---|
+| RX | io 36 | io 16 |
+| TX | io 26 | io 17 |
+| GND | GND | GND |
+| 5V | 5V | 5V |
+
+接続するポート番号（HAT CardKBの場合）
+
+| IchigoJam | M5StickC |
+|---|---|---|
+| RX | io 32 (GROVE) |
+| TX | io 33 (GROVE) |
+| GND | GND |
+
 
 
 ## ライセンス

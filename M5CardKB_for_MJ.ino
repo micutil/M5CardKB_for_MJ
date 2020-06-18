@@ -2,6 +2,7 @@
  * M5CardKB_for_MJ
  * CC by Micono
  * 
+ * 2020/6/18 ver1.3.0b1 HATタイプCardKB対応
  * 2020/5/24 ver1.2.0b1 PS/2, UART 入力対応
  * 2020/4/30 ver1.1.0b1 シリアルからの入力の出力に対応
  * 2020/4/28 ver1.0.0b1 公開
@@ -15,37 +16,56 @@
  * 
 *******************************************/
 
-#define ARDUINO_M5Stack_Core_ESP32 //ESP32 chimera board define
-//#define ARDUINO_M5StickC_ESP32
+//#define ARDUINO_M5Stack_Core_ESP32 //ESP32 chimera board define
+#define ARDUINO_M5StickC_ESP32
 
 #if defined(ARDUINO_M5Stack_Core_ESP32)
   #include <M5Stack.h>
   #define XMAX 320
   #define YMAX 240
   #define DTXSIZE 2
-  #define uartInput
+  #define useUartInput
   #define u2rx  16
   #define u2tx  17
-  #define useKbd
+  #define useKbdInput
 #elif defined(ARDUINO_M5StickC_ESP32)
   #include <M5StickC.h>
   #define XMAX 180
   #define YMAX 80
   #define DTXSIZE 1
-  //#define uartInput //Use UART or PS/2
-  #ifdef uartInput
-    #define u2rx  36
-    #define u2tx  26
+
+  //Use GROVE type CardKB
+  //#define useGRVCardKB
+  #ifdef useGRVCardKB
+    #define dispDirc 1
+    #define keyDirc 1
+    //#define useUartInput //for wired input (UART:TX/RX)
+    #ifdef useUartInput
+      #define u2rx  36
+      #define u2tx  26
+    #else
+      #define useKbdInput //for wired input (KBD1/2)
+    #endif
   #else
-    #define useKbd
+    //Use HAT type CardKB
+    #define useHATCardKB 
+    #define dispDirc 3
+    #define keyDirc -1
+    #define useUartInput //for wired input (UART:TX/RX)
+    #ifdef useUartInput
+      #define u2rx  32
+      #define u2tx  33
+    #else
+      //#define useKbdInput //for wired input (KBD1/2)
+    #endif
   #endif
 #endif
 
-#ifdef uartInput
+#ifdef useUartInput
   int u2num=0;
   boolean u2tgt=false;
 #endif
-#ifdef useKbd
+#ifdef useKbdInput
   int ps2num=0;
   boolean ps2tgt=false;
 #endif
@@ -96,7 +116,7 @@ int listtarget=0;
 /***********************************************/
 
 
-#ifdef useKbd
+#ifdef useKbdInput
 bool kbdMode=true;
 
 #define detectHostKbd //ホストからの送信データ //
@@ -108,13 +128,18 @@ bool useHostKbdCmd=false;
   #define KB_CLK      21 // A4  // PS/2 CLK  IchigoJamのKBD1に接続 //21//
   #define KB_DATA     22 // A5  // PS/2 DATA IchigoJamのKBD2に接続 //22//
 #elif defined(ARDUINO_M5StickC_ESP32)
-  //Grove端子 SDA:IO32, SCL:IO33
-  //Wire.begin(32, 33);
-  #define KB_CLK      0  // A4  // PS/2 CLK  IchigoJamのKBD1に接続 //21//
-  #define KB_DATA     26 // A5  // PS/2 DATA IchigoJamのKBD2に接続 //22//
-#elif defined(ARDUINO_ESP8266_MODULE)
-  #define KB_CLK      13 // A4  // PS/2 CLK  IchigoJamのKBD1に接続 //21//
-  #define KB_DATA     16 // A5  // PS/2 DATA IchigoJamのKBD2に接続 //22//
+  #ifdef useGrvCardKB
+    //Grove端子 SDA:IO32, SCL:IO33
+    //Wire.begin(32, 33);
+    #define KB_CLK      0  // A4  // PS/2 CLK  IchigoJamのKBD1に接続
+    #define KB_DATA     26 // A5  // PS/2 DATA IchigoJamのKBD2に接続
+  #else //useHATCardKB
+    //Grove端子 SDA:IO0, SCL:IO26
+    //Wire.begin(0, 26);
+    #define KB_CLK      33  // A4  // PS/2 CLK  IchigoJamのKBD1に接続
+    #define KB_DATA     32  // A5  // PS/2 DATA IchigoJamのKBD2に接続
+  #endif
+  
 #endif //ARDUINO_ARCH_ESP32
 
 uint8_t enabled =0;               // PS/2 ホスト送信可能状態
@@ -220,11 +245,11 @@ void breakKeyCode(uint8_t c) {
   keyboard.write(c);
 }
 
-#endif //useKbd
+#endif //useKbdInput
 
 bool sendKeyCode(int key) {
     
-#ifdef useKbd
+#ifdef useKbdInput
 
   if(kbdMode) {
     //if(key>0xFF) key=key-0x100;
@@ -253,7 +278,7 @@ bool sendKeyCode(int key) {
     return true;
   }
   
-#endif //useKbd
+#endif //useKbdInput
 
   Serial.write(key);
   return false;
@@ -287,10 +312,10 @@ bool WiFi_Connect()
  * 
 ****************************/
 void MJ_DrawSSID(uint16_t c) {
-  #ifdef useKbd
+  #ifdef useKbdInput
     if(ps2tgt) c=TFT_RED;
   #endif
-  #ifdef uartInput
+  #ifdef useUartInput
     if(u2tgt) c=TFT_MAGENTA;
   #endif
   M5.Lcd.setTextSize(2);
@@ -349,11 +374,11 @@ void MJ_APL() {
   int j=0,k=0;
   if (listcount == 0) {
     //M5.Lcd.println("'Not found");
-    #ifdef useKbd
+    #ifdef useKbdInput
       ps2tgt=true;
     #endif
-    #ifdef uartInput
-      #ifdef useKbd
+    #ifdef useUartInput
+      #ifdef useKbdInput
         u2tgt=true;
       #endif
     #endif
@@ -377,11 +402,11 @@ void MJ_APL() {
   //Serial.println(ssic[k-1]);
   //ssid[listcount]=ps2kbd;ps2num=listcount;listcount+=1;
   
-  #ifdef useKbd
+  #ifdef useKbdInput
     ssid[j]="PS/2 Keyboard\nKBD1="+String(KB_CLK)+": 2="+String(KB_DATA);
     ps2num=j;j+=1;listcount=j+k;
   #endif
-  #ifdef uartInput
+  #ifdef useUartInput
     ssid[j]="UART Input\nRX="+String(u2rx)+": TX="+String(u2tx);
     u2num=j;j+=1;listcount=j+k;
   #endif
@@ -399,10 +424,10 @@ void MJ_APL() {
  * 
 ****************************/
 void doUDPconnect() {
-  #ifdef useKbd
+  #ifdef useKbdInput
     if(ps2tgt) return;
   #endif
-  #ifdef uartInput
+  #ifdef useUartInput
     if(u2tgt) return;
   #endif
   if(WiFi.status() != WL_CONNECTED) {
@@ -436,10 +461,10 @@ void changeSSID(int n) {
       if(listtarget<0) listtarget=listcount-1;
     }
     
-    #ifdef useKbd
+    #ifdef useKbdInput
       ps2tgt=(listtarget==ps2num);
     #endif
-    #ifdef uartInput
+    #ifdef useUartInput
       u2tgt=(listtarget==u2num);
     #endif
 
@@ -453,10 +478,11 @@ void changeSSID(int n) {
  * セットアップ
  * 
 ****************************/
+
 void setup()
 { 
   //Keyboard
-  #ifdef useKbd
+  #ifdef useKbdInput
   //keyboard.keyboard_init();
   #endif
   
@@ -464,12 +490,16 @@ void setup()
   Serial.begin(115200);
   while (!Serial) { ; }
   
-  #ifdef uartInput
+  #ifdef useUartInput
   Serial2.begin(115200, SERIAL_8N1, u2rx, u2tx); // EXT_IO
   while (!Serial2) { ; }
   #endif
-  
-  Wire.begin();
+
+  #ifdef useHATCardKB
+    Wire.begin(0, 26);
+  #else
+    Wire.begin();//デフォルト
+  #endif
 
   #if defined(CARDKB_ADDR) || defined(JOY_ADDR)
   pinMode(5, INPUT);
@@ -486,13 +516,13 @@ void setup()
   delay(500);
 
   //少し時間を置いてから回転させた方がよい
-  M5.Lcd.setRotation(1);
+  M5.Lcd.setRotation(dispDirc);
   delay(500);
 
   //SSIDスキャン
   if(WiFi_Connect()==false) MJ_APL();
 
-  #ifdef useKbd
+  #ifdef useKbdInput
   //Keyboard
   keyboard.keyboard_init();
   #endif
@@ -526,12 +556,12 @@ void dataSend(uint8_t c) {
   if(isConnecting) {
     sendUDP(c);//接続先に送信
     
-  #ifdef useKbd
+  #ifdef useKbdInput
   } else if(ps2tgt) {
     sendKeyCode(c);
     Serial.print((char)c);
   #endif
-  #ifdef uartInput
+  #ifdef useUartInput
   } else if(u2tgt) {
     Serial.print((char)c);
     Serial2.print((char)c);
@@ -548,10 +578,10 @@ void dataSend(uint8_t c) {
         changeSSID(-1);
         break;
       case 30://Up
-        MJ_DrawDATA(-1);
+        MJ_DrawDATA(-keyDirc);
         break;
       case 31://Down
-        MJ_DrawDATA(1);
+        MJ_DrawDATA(keyDirc);
         break;
       default:
         if(c>0x20&&c<0x7F) {
@@ -590,6 +620,9 @@ void getUartData() {
  * ユニットからのデータを送信
  * 
 ****************************/
+#ifdef useHATCardKB
+int shiftFnKey=0;
+#endif
 void getKeyData(int kb_add) {
   Wire.requestFrom(kb_add, 1);
   while(Wire.available())
@@ -599,12 +632,29 @@ void getKeyData(int kb_add) {
     {
       switch(c) {
         case 0x0D: c=10; break;//Return
-        case 0xB4: c=28; break;//left
-        case 0xB7: c=29; break;//right
-        case 0xB5: c=30; break;//up
-        case 0xB6: c=31; break;//down
+        
+        #ifdef useHATCardKB
+          case 0x80:
+            switch (shiftFnKey) {
+              case 0: shiftFnKey=1; return;
+              case 1: shiftFnKey=0; return;
+            }
+          case 0x81:
+            shiftFnKey=0; return;
+            
+          case 0xB4: c=30; break;//left c=30; break;//up 
+          case 0xB7: c=29; break;//right
+          case 0xB5: c=31; break;//up c=31; break;//down
+          case 0xB6: c=28; break;//down c=28; break;//left
+          
+        #else
+          case 0xB4: c=28; break;//left
+          case 0xB7: c=29; break;//right
+          case 0xB5: c=30; break;//up
+          case 0xB6: c=31; break;//down
+        #endif
       }
-      //Serial.println(c,HEX);
+      Serial.println(c,HEX);
       dataSend(c);
     }
   }
@@ -629,7 +679,7 @@ void loop()
     if(M5.Axp.GetBtnPress()==2) MJ_APL();//Axp: SSIDスキャン
   #endif
 
-  #ifdef useKbd //#ifdef detectHostKbd
+  #ifdef useKbdInput //#ifdef detectHostKbd
     if(kbdMode) { //if(useHostKbdCmd) {
       unsigned char ck;  // ホストからの送信データ
       if( (digitalRead(KB_CLK)==LOW) || (digitalRead(KB_DATA) == LOW)) {
@@ -656,6 +706,9 @@ void loop()
    
   //ジョイスティック
   #ifdef JOY_ADDR
+  /*Wire.beginTransmission(JOY_ADDR);
+  Wire.write(0x02); 
+  Wire.endTransmission();*/
   Wire.requestFrom(JOY_ADDR, 3);
   if (Wire.available()) {
     x_data = Wire.read();
