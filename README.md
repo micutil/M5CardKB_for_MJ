@@ -23,13 +23,28 @@
 - 公開
 
 ## BINをインストールする方法
+
+### M5Burner\_Micを使う場合
+
 - [M5Burner\_Mic](http://micutil.com/download/M5Burner_Mic.zip)をダウンロード・インストールする。
 - M5CardKB\_for\_MJの中にあるbinフォルダの中の**M5CardKB\_for\_MJフォルダ**をM5Burner\_Micの**firmwaresフォルダ**の中にコピーします。
 - M5StackCまたはM5StackをUSB-Cケーブルでコンピュータと接続する。
 - M5Burner\_Micを起動する。
 - 「Port」を設定する。*複数台のESP機器がつながっている場合、ポートを間違えない様に注意して下さい。*
-- 「Priset」で**「M5CardKB\_for\_MJ (M5Stack)」**または**「M5CardKB\_for\_MJ (M5StickC)」**を選択する。
+- 「Priset」で**「M5CardKB\_for\_MJ (M5Stack)」**、**「M5CardKB\_for\_MJ (M5StickC)」**などを選択する。
 - 「Start」でインストールが始まります。
+
+### IJUtilities（v0.9.9d12以降）を使う場合
+
+- M5CardKB\_for\_MJの中にあるbinフォルダの中の**M5CardKB\_for\_MJフォルダ**をIJUtilitiesの**firmwaresフォルダ**の中にコピーします。
+- M5StackCまたはM5StackをUSB-Cケーブルでコンピュータと接続する。
+- IJUtilties を起動する。
+- オプションメニューのESPTool (MixJuiceなど）を選択する
+- 「Port」を設定する。*複数台のESP機器がつながっている場合、ポートを間違えない様に注意して下さい。*
+-  ボーレートは、適切な数値にしてください。
+- 「Priset」で**「M5CardKB\_for\_MJ (M5Stack)」**、**「M5CardKB\_for\_MJ (M5StickC)」**などを選択する。
+- 「Start」でインストールが始まります。
+
 
 ## Arduinoでビルドする場合
 
