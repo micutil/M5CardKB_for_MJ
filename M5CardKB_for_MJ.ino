@@ -2,6 +2,7 @@
  * M5CardKB_for_MJ
  * CC by Micono
  * 
+ * 2020/6/21 ver1.3.1b1 HAT CardKBで、矢印キー入替え
  * 2020/6/18 ver1.3.0b1 HATタイプCardKB対応
  * 2020/5/24 ver1.2.0b1 PS/2, UART 入力対応
  * 2020/4/30 ver1.1.0b1 シリアルからの入力の出力に対応
@@ -51,6 +52,7 @@
     #define useHATCardKB 
     #define dispDirc 3
     #define keyDirc -1
+    #define replaceShiftArrow //Replace shift arrow 
     #define useUartInput //for wired input (UART:TX/RX)
     #ifdef useUartInput
       #define u2rx  32
@@ -641,11 +643,24 @@ void getKeyData(int kb_add) {
             }
           case 0x81:
             shiftFnKey=0; return;
-            
-          case 0xB4: c=30; break;//left c=30; break;//up 
-          case 0xB7: c=29; break;//right
-          case 0xB5: c=31; break;//up c=31; break;//down
-          case 0xB6: c=28; break;//down c=28; break;//left
+
+          #ifdef replaceShiftArrow
+            case 0x3F: c=0x1E; break;//up c=31; break;//down
+            case 0x7C: c=0x1F; break;//down c=28; break;//left
+            case 0x5B: c=0x1C; break;//left c=30; break;//up 
+            case 0x5D: c=0x1D; break;//right
+  
+            case 0xB4: c=0x3F; break;//left c=30; break;//up 
+            case 0xB5: c=0x7C; break;//up c=31; break;//down
+            case 0xB6: c=0x5B; break;//down c=28; break;//left
+            case 0xB7: c=0x5D; break;//right
+
+          #else
+            case 0xB4: c=30; break;//left c=30; break;//up 
+            case 0xB7: c=29; break;//right
+            case 0xB5: c=31; break;//up c=31; break;//down
+            case 0xB6: c=28; break;//down c=28; break;//left
+          #endif
           
         #else
           case 0xB4: c=28; break;//left

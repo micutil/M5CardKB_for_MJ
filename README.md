@@ -6,6 +6,9 @@
 
 
 #### 主な更新内容
+##### v1.3.1b1 (2020/6/21)
+- HAT CardKBの矢印キーの４つをシフトなしの?,|,{,}と入れ替えた<br>
+
 ##### v1.3.0b1 (2020/6/19)
 - HAT CardKBに対応<br>
 <img src="image/hatcardkb.jpg" width="40%">
@@ -109,7 +112,7 @@ MicJackでは、IchigoJamに文字信号を送る場合に、TXを使って送�
 | GND | GND | GND |
 | 5V | 5V | 5V |
 
-接続するポート番号（HAT CardKBの場合）
+接続するポート番号（**HAT CardKBの場合**）
 
 | IchigoJam | M5StickC |
 |---|---|---|
