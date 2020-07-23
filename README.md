@@ -134,7 +134,7 @@ MicJackでは、IchigoJamに文字信号を送る場合に、TXを使って送�
 接続するポート番号（**HAT CardKBの場合**）
 
 | IchigoJam | M5StickC |
-|---|---|---|
+|---|---|
 | RX | io 32 (GROVE) |
 | TX | io 33 (GROVE) |
 | GND | GND |
