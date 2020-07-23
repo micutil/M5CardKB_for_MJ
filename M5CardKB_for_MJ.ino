@@ -2,6 +2,7 @@
  * M5CardKB_for_MJ
  * CC by Micono
  * 
+ * 2020/7/23 ver1.4.0b1 M5StickC PLUT対応、ほか
  * 2020/6/21 ver1.3.1b1 HAT CardKBで、矢印キー入替え
  * 2020/6/18 ver1.3.0b1 HATタイプCardKB対応
  * 2020/5/24 ver1.2.0b1 PS/2, UART 入力対応
@@ -18,25 +19,40 @@
 *******************************************/
 
 //#define ARDUINO_M5Stack_Core_ESP32 //ESP32 chimera board define
-#define ARDUINO_M5StickC_ESP32
+//#define ARDUINO_M5StickC_ESP32
+#define ARDUINO_M5StickC_PLUS_ESP32
 
 #if defined(ARDUINO_M5Stack_Core_ESP32)
   #include <M5Stack.h>
   #define XMAX 320
   #define YMAX 240
+  #define keyDirc 1
+  #define SAPSIZE 2
+  #define SSIDSIZE 2
   #define DTXSIZE 2
   #define useUartInput
   #define u2rx  16
   #define u2tx  17
   #define useKbdInput
-#elif defined(ARDUINO_M5StickC_ESP32)
-  #include <M5StickC.h>
-  #define XMAX 180
-  #define YMAX 80
-  #define DTXSIZE 1
+#elif defined(ARDUINO_M5StickC_ESP32)||defined(ARDUINO_M5StickC_PLUS_ESP32)
+  #ifdef ARDUINO_M5StickC_PLUS_ESP32
+    #include "M5StickCPlus.h"
+    #define XMAX 240
+    #define YMAX 135
+    #define SAPSIZE 3
+    #define SSIDSIZE 3
+    #define DTXSIZE 2
+  #else
+    #include <M5StickC.h>
+    #define XMAX 180
+    #define YMAX 80
+    #define SAPSIZE 2
+    #define SSIDSIZE 2
+    #define DTXSIZE 1
+  #endif
 
   //Use GROVE type CardKB
-  //#define useGRVCardKB
+  #define useGRVCardKB
   #ifdef useGRVCardKB
     #define dispDirc 1
     #define keyDirc 1
@@ -58,10 +74,16 @@
       #define u2rx  32
       #define u2tx  33
     #else
-      //#define useKbdInput //for wired input (KBD1/2)
+      #define useKbdInput //for wired input (KBD1/2)
     #endif
   #endif
 #endif
+
+//表示位置
+int apdw=8*SAPSIZE+2;
+int ssdw=(8*SSIDSIZE)*2;
+int dtdw=8*DTXSIZE+2;
+int dttp=apdw+ssdw;
 
 #ifdef useUartInput
   int u2num=0;
@@ -119,8 +141,8 @@ int listtarget=0;
 
 
 #ifdef useKbdInput
+bool kbdInit=false;
 bool kbdMode=true;
-
 #define detectHostKbd //ホストからの送信データ //
 bool useHostKbdCmd=false;
 
@@ -129,8 +151,8 @@ bool useHostKbdCmd=false;
 #if defined(ARDUINO_ESP32_MODULE) || defined(ARDUINO_M5Stack_Core_ESP32)
   #define KB_CLK      21 // A4  // PS/2 CLK  IchigoJamのKBD1に接続 //21//
   #define KB_DATA     22 // A5  // PS/2 DATA IchigoJamのKBD2に接続 //22//
-#elif defined(ARDUINO_M5StickC_ESP32)
-  #ifdef useGrvCardKB
+#elif defined(ARDUINO_M5StickC_ESP32)||defined(ARDUINO_M5StickC_PLUS_ESP32)
+  #ifdef useGRVCardKB
     //Grove端子 SDA:IO32, SCL:IO33
     //Wire.begin(32, 33);
     #define KB_CLK      0  // A4  // PS/2 CLK  IchigoJamのKBD1に接続
@@ -320,9 +342,9 @@ void MJ_DrawSSID(uint16_t c) {
   #ifdef useUartInput
     if(u2tgt) c=TFT_MAGENTA;
   #endif
-  M5.Lcd.setTextSize(2);
-  M5.Lcd.setCursor(0,18);
-  M5.Lcd.fillRect(0,18,XMAX,32,TFT_BLACK);
+  M5.Lcd.setTextSize(SSIDSIZE);
+  M5.Lcd.setCursor(0,apdw);
+  M5.Lcd.fillRect(0,apdw,XMAX,ssdw,TFT_BLACK);
   M5.Lcd.setTextColor(c,TFT_BLACK);
   M5.Lcd.println(ssid[listtarget]);
   Serial.println(ssid[listtarget]);
@@ -337,7 +359,7 @@ void MJ_DrawDATA(int n) {
   sNum=sNum+n;
   if(sNum<0) sNum=2;
   if(sNum>2) sNum=0;
-  M5.Lcd.fillRect(0,50,XMAX,30*DTXSIZE,TFT_BLACK);
+  M5.Lcd.fillRect(0,dttp,XMAX,dtdw*3,TFT_BLACK);
   M5.Lcd.setTextSize(DTXSIZE);
   for(int i=0;i<3;i++) {
     if(i==sNum) {
@@ -345,7 +367,7 @@ void MJ_DrawDATA(int n) {
     } else {
       M5.Lcd.setTextColor(TFT_WHITE,TFT_BLACK);
     }
-    M5.Lcd.setCursor(5,50+i*10*DTXSIZE);
+    M5.Lcd.setCursor(5,dttp+i*dtdw);
     M5.Lcd.println(sName[i]+sValue[i]);
   }
   M5.Lcd.setTextColor(TFT_WHITE,TFT_BLACK);
@@ -364,7 +386,7 @@ void MJ_APL() {
   int cc;//Bytes of SSID name
   M5.Lcd.fillRect(0,0,XMAX,YMAX,TFT_BLACK);
   M5.Lcd.setCursor(0,0);
-  M5.Lcd.setTextSize(2);
+  M5.Lcd.setTextSize(SAPSIZE);
   M5.Lcd.setTextColor(TFT_CYAN,TFT_BLACK);
   M5.Lcd.println("Select AP:");
   Serial.println("Select AP:");
@@ -427,7 +449,10 @@ void MJ_APL() {
 ****************************/
 void doUDPconnect() {
   #ifdef useKbdInput
-    if(ps2tgt) return;
+    if(ps2tgt) {
+      keyboard.keyboard_init();
+      return;
+    }
   #endif
   #ifdef useUartInput
     if(u2tgt) return;
@@ -435,9 +460,9 @@ void doUDPconnect() {
   if(WiFi.status() != WL_CONNECTED) {
     if(WiFi_Connect()) {
       isConnecting=true;
-      M5.Lcd.fillRect(0,0,XMAX,20,TFT_BLACK);
+      M5.Lcd.fillRect(0,0,XMAX,apdw,TFT_BLACK);
       M5.Lcd.setCursor(0,0);
-      M5.Lcd.setTextSize(2);
+      M5.Lcd.setTextSize(SAPSIZE);
       M5.Lcd.setTextColor(TFT_WHITE,TFT_BLACK);
       M5.Lcd.println("Connected to");
       MJ_DrawSSID(TFT_GREEN);
@@ -459,7 +484,7 @@ void changeSSID(int n) {
     listtarget=listtarget+n;
     if(n>0) {
       if(listtarget>listcount-1) listtarget=0;
-    } else {
+    } else if(n<0) {
       if(listtarget<0) listtarget=listcount-1;
     }
     
@@ -483,11 +508,6 @@ void changeSSID(int n) {
 
 void setup()
 { 
-  //Keyboard
-  #ifdef useKbdInput
-  //keyboard.keyboard_init();
-  #endif
-  
   M5.begin();
   Serial.begin(115200);
   while (!Serial) { ; }
@@ -497,36 +517,41 @@ void setup()
   while (!Serial2) { ; }
   #endif
 
-  #ifdef useHATCardKB
+  #if defined(useHATCardKB)
     Wire.begin(0, 26);
+  #elif defined(useGRVCardKB)
+    Wire.begin();//デフォルト Wire.begin(32,33);
   #else
     Wire.begin();//デフォルト
   #endif
 
   #if defined(CARDKB_ADDR) || defined(JOY_ADDR)
-  pinMode(5, INPUT);
-  digitalWrite(5, HIGH);
+    pinMode(5, INPUT);
+    digitalWrite(5, HIGH);
   #endif
 
   #if defined(FACES_ADDR)
-  pinMode(FACES_INT, INPUT_PULLUP);
+    pinMode(FACES_INT, INPUT_PULLUP);
   #endif
 
   M5.Lcd.fillScreen(TFT_BLACK);
   M5.Lcd.setTextColor(TFT_WHITE,TFT_BLACK);
-  M5.Lcd.setTextSize(2);
+  M5.Lcd.setTextSize(SAPSIZE);
   delay(500);
 
   //少し時間を置いてから回転させた方がよい
-  M5.Lcd.setRotation(dispDirc);
-  delay(500);
+  #if defined(ARDUINO_M5StickC_ESP32)||defined(ARDUINO_M5StickC_PLUS_ESP32)
+    M5.Lcd.setRotation(dispDirc);
+    delay(500);
+  #endif
 
   //SSIDスキャン
   if(WiFi_Connect()==false) MJ_APL();
-
+  changeSSID(0);
+  
   #ifdef useKbdInput
   //Keyboard
-  keyboard.keyboard_init();
+  //keyboard.keyboard_init();
   #endif
 
 }
@@ -626,6 +651,7 @@ void getUartData() {
 int shiftFnKey=0;
 #endif
 void getKeyData(int kb_add) {
+  
   Wire.requestFrom(kb_add, 1);
   while(Wire.available())
   {
@@ -690,33 +716,39 @@ void loop()
 
   #if defined(ARDUINO_M5Stack_Core_ESP32)
     if(M5.BtnC.wasPressed()) MJ_APL();//SSIDスキャン
-  #elif defined(ARDUINO_M5StickC_ESP32)
+  #elif defined(ARDUINO_M5StickC_ESP32)||defined(ARDUINO_M5StickC_PLUS_ESP32)
     if(M5.Axp.GetBtnPress()==2) MJ_APL();//Axp: SSIDスキャン
   #endif
 
+  /*
   #ifdef useKbdInput //#ifdef detectHostKbd
     if(kbdMode) { //if(useHostKbdCmd) {
       unsigned char ck;  // ホストからの送信データ
-      if( (digitalRead(KB_CLK)==LOW) || (digitalRead(KB_DATA) == LOW)) {
-        while(keyboard.read(&ck)) ;
-        keyboardcommand(ck);
-        //Serial.println(ck,HEX);
+      if((digitalRead(KB_CLK)==LOW) || (digitalRead(KB_DATA) == LOW)) {
+        if(keyboard.read(&ck)==0) { //while(keyboard.read(&ck)) ;
+          if(ck==0xFF) {
+            keyboardcommand(ck);
+            //Serial.println(ck,HEX);
+            kbdInit=true;
+          }
+        }
       }
     }
   #endif  
-
+  */
+  
   //Uartデータ
   getUartData();
   
   //キーボードユニット
   #ifdef CARDKB_ADDR
-  getKeyData(CARDKB_ADDR);
+    getKeyData(CARDKB_ADDR);
   #endif //CARDKB_ADDR
   
   #ifdef FACES_ADDR
-  if(digitalRead(FACES_INT) == LOW) {
-    getKeyData(FACES_ADDR);
-  }
+    if(digitalRead(FACES_INT) == LOW) {
+      getKeyData(FACES_ADDR);
+    }
   #endif //FACES_ADDR
    
   //ジョイスティック

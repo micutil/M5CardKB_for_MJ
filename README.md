@@ -6,12 +6,16 @@
 
 
 #### 主な更新内容
+##### v1.4.0b1 (2020/7/23)
+- M5StickC PLUSに対応<br>
+<img src="image/m5stickcplus.jpg" width="30%">
+
 ##### v1.3.1b1 (2020/6/21)
 - HAT CardKBの矢印キーの４つをシフトなしの?,|,{,}と入れ替えた<br>
 
 ##### v1.3.0b1 (2020/6/19)
 - HAT CardKBに対応<br>
-<img src="image/hatcardkb.jpg" width="40%">
+<img src="image/hatcardkb.jpg" width="30%">
 
 ##### v1.2.0b1 (2020/5/24)
 - 無線を使わずに有線でM5StackまたはM5StickCを介してCardKBからIchigoJamに文字入力できるように対応（CardKBからの信号をPS/2信号に変換, またはUARTで送信します）

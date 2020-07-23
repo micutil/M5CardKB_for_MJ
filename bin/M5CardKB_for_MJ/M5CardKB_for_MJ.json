@@ -1,7 +1,7 @@
 [
     {
         "name": "M5CardKB for MJ (M5Stack)",
-        "version": "v1.2.0",
+        "version": "v1.4.0",
         "path": "",
         "commands": [
 			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_qio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stack_core_esp32.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
@@ -9,7 +9,7 @@
     },
     {
         "name": "M5CardKB for MJ & PS/2 (M5StickC)",
-        "version": "v1.2.0",
+        "version": "v1.4.0",
         "path": "",
         "commands": [
 			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_ps2.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
@@ -17,26 +17,58 @@
     },
     {
         "name": "M5CardKB for MJ & UART (M5StickC)",
-        "version": "v1.2.0",
+        "version": "v1.4.0",
         "path": "",
         "commands": [
 			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_uart.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
         ]
     },
-	{
-        "name": "M5CardKB (HAT) for MJ & UART (M5StickC)",
-        "version": "v1.3.0",
+    {
+        "name": "M5CardKB for MJ & PS/2 (M5StickC PLUS)",
+        "version": "v1.4.0",
         "path": "",
         "commands": [
-			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_uart_HAT_130b1.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
+			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_plus_ps2.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
         ]
     },
     {
-        "name": "M5CardKB (HAT) Ex for MJ & UART (M5StickC)",
-        "version": "v1.3.1",
+        "name": "M5CardKB for MJ & UART (M5StickC PLUS)",
+        "version": "v1.4.0",
+        "path": "",
+        "commands": [
+			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_plus_uart.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
+        ]
+    },
+    {
+        "name": "M5CardKB (HAT) for MJ & PS/2 (M5StickC)",
+        "version": "v1.4.0",
+        "path": "",
+        "commands": [
+			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_ps2_HAT.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
+        ]
+    },
+    {
+        "name": "M5CardKB (HAT) for MJ & UART (M5StickC)",
+        "version": "v1.4.0",
         "path": "",
         "commands": [
 			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_uart_HAT.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
+        ]
+    },
+    {
+        "name": "M5CardKB (HAT) for MJ & PS/2 (M5StickC PLUS)",
+        "version": "v1.4.0",
+        "path": "",
+        "commands": [
+			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_plus_ps2_HAT.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
+        ]
+    },
+    {
+        "name": "M5CardKB (HAT) for MJ & UART (M5StickC PLUS)",
+        "version": "v1.4.0",
+        "path": "",
+        "commands": [
+			"--chip esp32 --port %port --baud %baud --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 %PATH\\bin/boot_app0.bin 0x1000 %PATH\\bin/bootloader_dio_80m.bin 0x10000 %PATH\\M5CardKB_for_MJ.ino.m5stick_c_plus_uart_HAT.bin 0x8000 %PATH\\bin/M5CardKB_for_MJ.ino.partitions.bin"
         ]
     },
 ]
